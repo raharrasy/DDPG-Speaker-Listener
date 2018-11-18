@@ -89,8 +89,8 @@ for i_episode in range(1200):
 
 		if actionCounter % saveFrequencies ==0:
 			env_name = 'speaker_listener'
-			self.controller1.save_model(self, env_name,suffix='speaker')
-			self.controller1.save_model(self, env_name,suffix='listener')
+			controller1.save_model(self, env_name,suffix='speaker')
+			controller1.save_model(self, env_name,suffix='listener')
 
 		observation = newObservation
 
