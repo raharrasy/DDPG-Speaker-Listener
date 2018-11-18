@@ -43,6 +43,25 @@ class MADDPG(object):
 
 		self.hard_update()
 
+	def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
+		if not os.path.exists('models/'):
+			os.makedirs('models/')
+
+		if actor_path is None:
+			actor_path = "models/ddpg_actor_{}_{}".format(env_name, suffix) 
+		if critic_path is None:
+			critic_path = "models/ddpg_critic_{}_{}".format(env_name, suffix) 
+		print('Saving models to {} and {}'.format(actor_path, critic_path))
+		torch.save(self.actor.state_dict(), actor_path)
+		torch.save(self.critic.state_dict(), critic_path)
+
+	def load_model(self, actor_path, critic_path):
+		print('Loading models from {} and {}'.format(actor_path, critic_path))
+		if actor_path is not None:
+			self.actor.load_state_dict(torch.load(actor_path))
+		if critic_path is not None: 
+			self.critic.load_state_dict(torch.load(critic_path))
+
 	def select_action(self, state, epsilon=0.05):
 		with torch.no_grad():
 			self.actor.eval()

@@ -51,6 +51,7 @@ controllers = [controller1,controller2]
 epsilon = 1.0
 batchSize = 64
 updateFrequencies = 32
+saveFrequencies = 100
 actionCounter = 0
 total = 0
 for i_episode in range(1200):
@@ -85,6 +86,11 @@ for i_episode in range(1200):
 		if actionCounter % updateFrequencies == 0:
 			controller1.hard_update()
 			controller2.hard_update()
+
+		if actionCounter % saveFrequencies ==0:
+			env_name = 'speaker_listener'
+			self.controller1.save_model(self, env_name,suffix='speaker')
+			self.controller1.save_model(self, env_name,suffix='listener')
 
 		observation = newObservation
 
