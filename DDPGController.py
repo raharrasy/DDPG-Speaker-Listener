@@ -46,16 +46,18 @@ class MADDPG(object):
 		self.hard_update()
 
 	def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
-		if not os.path.exists('models/'):
-			os.makedirs('models/')
+		if not os.path.exists('models2/'):
+			os.makedirs('models2/')
 
 		if actor_path is None:
-			actor_path = "models/ddpg_actor_{}_{}".format(env_name, suffix) 
+			actor_path = "models2/ddpg_actor_{}_{}".format(env_name, suffix) 
 		if critic_path is None:
-			critic_path = "models/ddpg_critic_{}_{}".format(env_name, suffix) 
+			critic_path = "models2/ddpg_critic_{}_{}".format(env_name, suffix) 
 		print('Saving models to {} and {}'.format(actor_path, critic_path))
 		torch.save(self.actor.state_dict(), actor_path)
 		torch.save(self.critic.state_dict(), critic_path)
+		os.system("cp "+actor_path+" models")
+		os.system("cp "+critic_path+" models")
 
 	def load_model(self, actor_path, critic_path):
 		print('Loading models from {} and {}'.format(actor_path, critic_path))
