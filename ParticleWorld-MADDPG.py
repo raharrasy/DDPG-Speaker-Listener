@@ -2,7 +2,6 @@
 import gym
 from DDPGController import MADDPG
 from ExperienceReplay import ExperienceReplay, Transition
-from OUNoise import OUNoise
 import torch
 import numpy as np
 
