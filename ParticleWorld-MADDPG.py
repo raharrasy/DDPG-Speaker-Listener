@@ -63,7 +63,7 @@ for i_episode in range(1200):
 	if i_episode % saveFrequencies ==0:
 		env_name = 'speaker_listener'
 		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//100))
-		controller1.save_model(env_name,suffix='listener_'+str(i_episode//100))
+		controller2.save_model(env_name,suffix='listener_'+str(i_episode//100))
 
 	epsilon = 1.0-((i_episode+0.0)/700.0)*0.95
 	while not done[0] and not done[1] and counter < 1000:
