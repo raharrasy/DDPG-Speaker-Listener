@@ -18,6 +18,8 @@ class MADDPG(object):
 		self.outputSpaceSize = outputSpaceSize
 		self.opponentOutputSpaceSize = opponentOutputSpaceSize
 
+		self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 		self.actorLearningRate = actorLearningRate
 		self.criticLearningRate = criticLearningRate
 
@@ -28,19 +30,23 @@ class MADDPG(object):
 		self.agentType = agentType
 
 		self.actor = Actor(self.inputSize, self.numHiddenUnits, self.outputSpaceSize, self.agentType)
+		self.actor.to(self.device)
 		self.critic = Critic(self.inputSize, self.numHiddenUnits, self.outputSpaceSize, self.opponentOutputSpaceSize)
+		self.critic.to(self.device)
 		self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.actorLearningRate)
 		self.critic_optim = optim.Adam(self.critic.parameters(), lr=self.criticLearningRate)
 
 		self.targetActor = Actor(self.inputSize, self.numHiddenUnits, self.outputSpaceSize, self.agentType)
+		self.targetActor.to(self.device)
 		self.targetCritic = Critic(self.inputSize, self.numHiddenUnits, self.outputSpaceSize, self.opponentOutputSpaceSize)
+		self.targetCritic.to(self.device)
 
 		self.hard_update()
 
 	def select_action(self, state, epsilon=0.05):
 		with torch.no_grad():
 			self.actor.eval()
-			action = self.actor((Variable(state)),epsilon)
+			action = self.actor((Variable(state).to(self.device)),epsilon)
 			self.actor.train()
 		return action.data
 
@@ -68,17 +74,17 @@ class MADDPG(object):
 			temp3 = temp3 + (m[agent_id],)
 			temp4 = temp4 + (n[agent_id],)
 
-		states = Variable(torch.cat(temp1))
-		action = Variable(torch.cat(temp2))
-		reward = Variable(torch.cat(temp3))
-		mask = Variable(torch.cat(temp4))
+		states = Variable(torch.cat(temp1)).to(self.device)
+		action = Variable(torch.cat(temp2)).to(self.device)
+		reward = Variable(torch.cat(temp3)).to(self.device)
+		mask = Variable(torch.cat(temp4)).to(self.device)
 
 		next_states_oppo = []
 		for i in range(2):
 			temp1 = ()
 			for k in batch.next_state:
 				temp1 = temp1 + (k[i],)
-			next_states = Variable(torch.cat(temp1))
+			next_states = Variable(torch.cat(temp1)).to(self.device)
 			next_states_oppo.append(next_states)
 
 
@@ -91,14 +97,14 @@ class MADDPG(object):
 			collectiveActions = None
 			idx = 0
 			for nextState, act in zip(next_states_oppo, agentControllers):
-				nextAction = act.select_action(Variable(nextState), 0.0)
+				nextAction = act.select_action(Variable(nextState).to(self.device), 0.0)
 				if idx == 0:
 					collectiveActions = nextAction
 					idx += 1
 				else:
 					collectiveActions = torch.cat((collectiveActions,nextAction), dim=1)
 
-		next_state_action_values = self.critic(Variable(next_states_oppo[agent_id]), collectiveActions)
+		next_state_action_values = self.critic(Variable(next_states_oppo[agent_id]).to(self.device), collectiveActions)
 		reward = reward.unsqueeze(1)
 		mask = mask.unsqueeze(1)
 		expected_state_value = reward + (self.discountRate * mask * next_state_action_values)
