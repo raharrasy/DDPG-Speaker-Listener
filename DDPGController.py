@@ -18,7 +18,8 @@ class MADDPG(object):
 		self.outputSpaceSize = outputSpaceSize
 		self.opponentOutputSpaceSize = opponentOutputSpaceSize
 
-		self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+		#self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+		self.device = "cpu"
 
 		self.actorLearningRate = actorLearningRate
 		self.criticLearningRate = criticLearningRate
