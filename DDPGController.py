@@ -11,9 +11,9 @@ import os
 import gym
 
 class MADDPG(object):
-	def __init__(self, inputSize , outputSpaceSize, opponentOutputSpaceSize, actorLearningRate=1e-4, criticLearningRate=1e-3,
-		batchSize = 64, discountRate=0.99, numHiddenUnits = 25,
-		polyakAveragingWeight = 1e-3, agentType = 'listener'):
+	def __init__(self, inputSize , outputSpaceSize, opponentOutputSpaceSize, actorLearningRate=4e-3, criticLearningRate=4e-3,
+		batchSize = 64, discountRate=0.95, numHiddenUnits = 25,
+		polyakAveragingWeight = 5e-2, agentType = 'listener'):
 
 		self.inputSize = inputSize
 		self.outputSpaceSize = outputSpaceSize

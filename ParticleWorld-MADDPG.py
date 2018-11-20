@@ -49,12 +49,13 @@ controllers = [controller1,controller2]
 #Exp noise determine!
 
 epsilon = 1.0
-batchSize = 64
+batchSize = 1024
 updateFrequencies = 32
-saveFrequencies = 100
+saveFrequencies = 1000
 actionCounter = 0
 total = 0
-for i_episode in range(1200):
+
+for i_episode in range(20000):
 	done = [False,False]
 	observation = env.reset()
 	total = 0
@@ -62,10 +63,10 @@ for i_episode in range(1200):
 
 	if i_episode % saveFrequencies ==0:
 		env_name = 'speaker_listener'
-		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//100))
-		controller2.save_model(env_name,suffix='listener_'+str(i_episode//100))
+		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//1000))
+		controller2.save_model(env_name,suffix='listener_'+str(i_episode//1000))
 
-	epsilon = 1.0-((i_episode+0.0)/700.0)*0.95
+	epsilon = 1.0-((i_episode+0.0)/15000.0)*0.95
 	while not done[0] and not done[1] and counter < 1000:
 		counter += 1
 		#env.render()
@@ -80,17 +81,17 @@ for i_episode in range(1200):
 			torch.Tensor([reward[1]])])
 		
 		if experienceReplay.curSize >= batchSize :
-			samples = experienceReplay.sample(batchSize)
-			batch = Transition(*zip(*samples))
-			valueLoss, policyLoss = controller1.update_parameters(batch,0,controllers)
+			if actionCounter % 100 == 0:
+				samples = experienceReplay.sample(batchSize)
+				batch = Transition(*zip(*samples))
+				valueLoss, policyLoss = controller1.update_parameters(batch,0,controllers)
 
-			samples2 = experienceReplay.sample(batchSize)
-			batch2 = Transition(*zip(*samples2))
-			valueLoss2, policyLoss2 = controller2.update_parameters(batch2,1,controllers)
+				samples2 = experienceReplay.sample(batchSize)
+				batch2 = Transition(*zip(*samples2))
+				valueLoss2, policyLoss2 = controller2.update_parameters(batch2,1,controllers)
 
-		if actionCounter % updateFrequencies == 0:
-			controller1.hard_update()
-			controller2.hard_update()
+			controller1.soft_update()
+			controller2.soft_update()
 
 		observation = newObservation
 
