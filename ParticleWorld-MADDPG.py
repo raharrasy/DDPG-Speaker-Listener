@@ -48,7 +48,8 @@ controllers = [controller1,controller2]
 #noise = OUNoise(4)
 #Exp noise determine!
 
-epsilon = 1.0
+epsilon = 0.0
+noise_factor = 5.0
 batchSize = 1024
 updateFrequencies = 32
 saveFrequencies = 1000
@@ -66,15 +67,15 @@ for i_episode in range(10000):
 		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//1000))
 		controller2.save_model(env_name,suffix='listener_'+str(i_episode//1000))
 
-	epsilon = 1.0-min(1.0,(i_episode+0.0)/7000.0)*0.95
+	epsilon = 5.0-min(1.0,(i_episode+0.0)/7000.0)*4.95
 	controller1.epsilon = epsilon
 	controller2.epsilon = epsilon
 
 	while not done[0] and not done[1] and counter < 1000:
 		counter += 1
 		#env.render()
-		action1 = controller1.select_action(torch.Tensor([observation[0]]), epsilon)
-		action2 = controller2.select_action(torch.Tensor([observation[1]]), epsilon)
+		action1 = controller1.select_action(torch.Tensor([observation[0]]), epsilon, noise_factor)
+		action2 = controller2.select_action(torch.Tensor([observation[1]]), epsilon, noise_factor)
 		newObservation, reward, done, info = env.step([action1[0].numpy(),action2[0].numpy()])
 		actionCounter += 1
 		total += reward[1]

@@ -39,7 +39,7 @@ class Actor(nn.Module):
 			self.acts.weight.shape[1]) - 3e-3)
 		self.acts.bias = torch.nn.Parameter(6e-3 * torch.rand(self.acts.bias.shape[0]) - 3e-3)
 
-	def forward(self, inputs, epsilon) :
+	def forward(self, inputs, epsilon=0.0, noise_factor=0.0) :
 		out = self.linear1(inputs)
 		out = self.layerNorm(out)
 		out = F.relu(out)
@@ -53,10 +53,10 @@ class Actor(nn.Module):
 			output = None
 			for digit in range(self.actionSpaceSize):
 				if digit == 0:
-					output = GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon).sample(out[:,2*digit:2*digit+2])
+					output = GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon, noise_factor = noise_factor).sample(out[:,2*digit:2*digit+2])
 					output = output[:,0:1]
 				else :
-					output = torch.cat((output,GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon).sample(out[:,2*digit:2*digit+2])[:,0:1]), dim=1)
+					output = torch.cat((output,GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon, noise_factor = noise_factor).sample(out[:,2*digit:2*digit+2])[:,0:1]), dim=1)
 			
 			out = output		
 		return out
@@ -102,13 +102,15 @@ class Critic(nn.Module):
 
 
 class GumbelSoftmax(object):
-	def __init__(self, temperature=1.0, epsilon = 0.05, hard=False):
+	def __init__(self, temperature=1.0, epsilon = 0.05, hard=False, noise_factor = 0.0):
 		self.temperature = temperature
 		self.hard = hard
 		self.epsilon = epsilon
+		self.noise_factor = noise_factor
 
 	def sample(self,logits):
 
+		logits = logits + self.noise_factor * torch.randn(logits.shape)
 		gumbelLogits = logits + self.gumbelDistSample(logits)
 		gumbelSoftmax = F.softmax(gumbelLogits/self.temperature, dim=1)
 
