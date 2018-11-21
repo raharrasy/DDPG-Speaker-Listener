@@ -67,9 +67,9 @@ for i_episode in range(10000):
 		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//1000))
 		controller2.save_model(env_name,suffix='listener_'+str(i_episode//1000))
 
-	epsilon = 5.0-min(1.0,(i_episode+0.0)/7000.0)*4.95
-	controller1.epsilon = epsilon
-	controller2.epsilon = epsilon
+	noise_factor = 5.0-min(1.0,(i_episode+0.0)/7000.0)*4.95
+	#controller1.epsilon = epsilon
+	#controller2.epsilon = epsilon
 
 	while not done[0] and not done[1] and counter < 1000:
 		counter += 1
