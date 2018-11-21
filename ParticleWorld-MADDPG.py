@@ -40,8 +40,8 @@ env = make_env('simple_speaker_listener')
 #env = gym.make('HalfCheetah-v2')
 #env = gym.make('BipedalWalker-v2')
 
-controller1 = MADDPG(3, 3, 5, agentType = 'speaker')
-controller2 = MADDPG(11, 5, 3, agentType = 'listener')
+controller1 = MADDPG(3, 3, 5, 1.0,agentType = 'speaker')
+controller2 = MADDPG(11, 5, 3, 1.0,agentType = 'listener')
 expReplaySize = int(1e6)
 experienceReplay = ExperienceReplay(expReplaySize)
 controllers = [controller1,controller2]
@@ -55,7 +55,7 @@ saveFrequencies = 1000
 actionCounter = 0
 total = 0
 
-for i_episode in range(20000):
+for i_episode in range(10000):
 	done = [False,False]
 	observation = env.reset()
 	total = 0
@@ -66,7 +66,10 @@ for i_episode in range(20000):
 		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//1000))
 		controller2.save_model(env_name,suffix='listener_'+str(i_episode//1000))
 
-	epsilon = 1.0-((i_episode+0.0)/15000.0)*0.95
+	epsilon = 1.0-min(1.0,(i_episode+0.0)/7000.0)*0.95
+	controller1.epsilon = epsilon
+	controller2.epsilon = epsilon
+
 	while not done[0] and not done[1] and counter < 1000:
 		counter += 1
 		#env.render()

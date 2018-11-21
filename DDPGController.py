@@ -11,10 +11,11 @@ import os
 import gym
 
 class MADDPG(object):
-	def __init__(self, inputSize , outputSpaceSize, opponentOutputSpaceSize, actorLearningRate=4e-3, criticLearningRate=4e-3,
+	def __init__(self, inputSize , outputSpaceSize, opponentOutputSpaceSize, epsilon, actorLearningRate=4e-3, criticLearningRate=4e-3,
 		batchSize = 64, discountRate=0.95, numHiddenUnits = 25,
 		polyakAveragingWeight = 5e-2, agentType = 'listener'):
 
+		self.epsilon = epsilon
 		self.inputSize = inputSize
 		self.outputSpaceSize = outputSpaceSize
 		self.opponentOutputSpaceSize = opponentOutputSpaceSize
@@ -131,7 +132,7 @@ class MADDPG(object):
 		reward = reward.unsqueeze(1)
 		mask = mask.unsqueeze(1)
 		expected_state_value = reward + (self.discountRate * mask * next_state_action_values)
-
+		expected_state_value.detach()
 		self.critic_optim.zero_grad()
 
 		i = 0
@@ -149,7 +150,7 @@ class MADDPG(object):
 			else:
 				allActions = torch.cat((allActions,combinedActions), dim=0)
 
-
+		allActions.detach()
 		state_value = self.critic((states), (allActions))
 
 		value_loss = F.mse_loss(state_value, expected_state_value)
@@ -159,7 +160,7 @@ class MADDPG(object):
 		self.critic_optim.zero_grad()
 		self.actor_optim.zero_grad()
 
-		replacementActions = self.actor((states),0)
+		replacementActions = self.actor((states),self.epsilon)
 		
 		if agent_id == 0:
 			allActions[:,0:3] = replacementActions
