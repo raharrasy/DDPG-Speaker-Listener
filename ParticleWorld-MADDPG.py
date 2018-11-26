@@ -1,4 +1,4 @@
-
+from torch.autograd import Variable
 import gym
 from DDPGController import MADDPG
 from ExperienceReplay import ExperienceReplay, Transition
@@ -48,7 +48,7 @@ controllers = [controller1,controller2]
 #noise = OUNoise(4)
 #Exp noise determine!
 
-epsilon = 0.0
+epsilon = 1.0
 noise_factor = 5.0
 batchSize = 1024
 updateFrequencies = 32
@@ -67,16 +67,23 @@ for i_episode in range(10000):
 		controller1.save_model(env_name,suffix='speaker_'+str(i_episode//1000))
 		controller2.save_model(env_name,suffix='listener_'+str(i_episode//1000))
 
-	noise_factor = 5.0-min(1.0,(i_episode+0.0)/7000.0)*4.95
+	epsilon = 1.0-min(1.0,(i_episode+0.0)/6000.0)*0.95
 	#controller1.epsilon = epsilon
 	#controller2.epsilon = epsilon
 
 	while not done[0] and not done[1] and counter < 1000:
 		counter += 1
 		#env.render()
-		action1 = controller1.select_action(torch.Tensor([observation[0]]), epsilon, noise_factor)
-		action2 = controller2.select_action(torch.Tensor([observation[1]]), epsilon, noise_factor)
-		newObservation, reward, done, info = env.step([action1[0].numpy(),action2[0].numpy()])
+		action1 = controller1.select_action(torch.Tensor([observation[0]]),epsilon=0)
+		action2 = controller2.select_action(torch.Tensor([observation[1]]),epsilon=0)
+		action1 = (action1 == action1.max(1, keepdim=True)[0]).float()
+		action2 = (action2 == action2.max(1, keepdim=True)[0]).float()
+		rand_acs1 = Variable(torch.eye(action1.shape[1])[[np.random.choice(range(action1.shape[1]), size=action1.shape[0])]], requires_grad=False)
+		rand_acs2 = Variable(torch.eye(action2.shape[1])[[np.random.choice(range(action2.shape[1]), size=action2.shape[0])]], requires_grad=False)
+		samples1 = torch.stack([action1[i] if r > epsilon else rand_acs1[i] for i, r in enumerate(torch.rand(action1.shape[0]))])
+		samples2 = torch.stack([action2[i] if r > epsilon else rand_acs2[i] for i, r in enumerate(torch.rand(action2.shape[0]))])
+		newObservation, reward, done, info = env.step([samples1[0].numpy(),samples2[0].numpy()])
+		
 		actionCounter += 1
 		total += reward[1]
 		experienceReplay.addExperience([torch.Tensor([observation[0]]), torch.Tensor([observation[1]])], 

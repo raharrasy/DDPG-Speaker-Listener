@@ -70,7 +70,7 @@ class MADDPG(object):
 	def select_action(self, state, epsilon=0.0, noise_factor = 0.0):
 		with torch.no_grad():
 			self.actor.eval()
-			action = self.actor((Variable(state).to(self.device)),epsilon)
+			action = self.actor((Variable(state).to(self.device)),epsilon=epsilon)
 			self.actor.train()
 		return action.data
 
@@ -121,7 +121,7 @@ class MADDPG(object):
 			collectiveActions = None
 			idx = 0
 			for nextState, act in zip(next_states_oppo, agentControllers):
-				nextAction = act.select_action(Variable(nextState).to(self.device), 0.0, 0.0)
+				nextAction = act.select_action(Variable(nextState).to(self.device), epsilon = 0.0)
 				if idx == 0:
 					collectiveActions = nextAction
 					idx += 1
@@ -160,7 +160,7 @@ class MADDPG(object):
 		self.critic_optim.zero_grad()
 		self.actor_optim.zero_grad()
 
-		replacementActions = self.actor((states))
+		replacementActions = self.actor((states),epsilon=0)
 		
 		if agent_id == 0:
 			allActions[:,0:3] = replacementActions

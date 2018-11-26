@@ -19,27 +19,22 @@ class Actor(nn.Module):
 		self.layerNorm = nn.LayerNorm(hiddenLayerSize)
 
 
-		self.linear1.weight = torch.nn.Parameter(2.0/math.sqrt(inputSize) * torch.rand(self.linear1.weight.shape[0], 
-			self.linear1.weight.shape[1]) - 1.0/math.sqrt(inputSize))
-		self.linear1.bias = torch.nn.Parameter(2.0/math.sqrt(inputSize) * torch.rand(self.linear1.bias.shape[0]) - 1.0/math.sqrt(inputSize))
+		self.linear1.weight = torch.nn.Parameter(6e-3*2.0/math.sqrt(inputSize) * torch.rand(self.linear1.weight.shape[0], self.linear1.weight.shape[1]) - 1.0/math.sqrt(inputSize))
+		self.linear1.bias = torch.nn.Parameter(6e-3*2.0/math.sqrt(inputSize) * torch.rand(self.linear1.bias.shape[0]) - 1.0/math.sqrt(inputSize))
 
 		self.linear2 = nn.Linear(hiddenLayerSize, hiddenLayerSize)
 		self.layerNorm2 = nn.LayerNorm(hiddenLayerSize)
 
-		self.linear2.weight = torch.nn.Parameter(2.0/math.sqrt(inputSize) * torch.rand(self.linear2.weight.shape[0], 
+		self.linear2.weight = torch.nn.Parameter(6e-3 * 2.0/math.sqrt(inputSize) * torch.rand(self.linear2.weight.shape[0], 
 			self.linear2.weight.shape[1]) - 1.0/math.sqrt(inputSize))
-		self.linear2.bias = torch.nn.Parameter(2.0/math.sqrt(inputSize) * torch.rand(self.linear2.bias.shape[0]) - 1.0/math.sqrt(inputSize))
+		self.linear2.bias = torch.nn.Parameter(6e-3 * 2.0/math.sqrt(inputSize) * torch.rand(self.linear2.bias.shape[0]) - 1.0/math.sqrt(inputSize))
 
-		if self.agentType == 'listener':
-			self.acts = nn.Linear(hiddenLayerSize, self.actionSpaceSize)
-		else:
-			self.acts = nn.Linear(hiddenLayerSize, 2*self.actionSpaceSize)
+		self.acts = nn.Linear(hiddenLayerSize, self.actionSpaceSize)
+		self.acts.weight = torch.nn.Parameter(6e-4 * torch.rand(self.acts.weight.shape[0], 
+			self.acts.weight.shape[1]) - 3e-4)
+		self.acts.bias = torch.nn.Parameter(6e-4 * torch.rand(self.acts.bias.shape[0]) - 3e-4)
 
-		self.acts.weight = torch.nn.Parameter(6e-3 * torch.rand(self.acts.weight.shape[0], 
-			self.acts.weight.shape[1]) - 3e-3)
-		self.acts.bias = torch.nn.Parameter(6e-3 * torch.rand(self.acts.bias.shape[0]) - 3e-3)
-
-	def forward(self, inputs, epsilon=0.0, noise_factor=0.0) :
+	def forward(self, inputs, hard=False, epsilon=0.0) :
 		out = self.linear1(inputs)
 		out = self.layerNorm(out)
 		out = F.relu(out)
@@ -47,18 +42,7 @@ class Actor(nn.Module):
 		out = self.layerNorm2(out)
 		out = F.relu(out)
 		out = self.acts(out)
-		if self.agentType == 'listener':
-			out = GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon).sample(out)
-		else:
-			output = None
-			for digit in range(self.actionSpaceSize):
-				if digit == 0:
-					output = GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon, noise_factor = noise_factor).sample(out[:,2*digit:2*digit+2])
-					output = output[:,0:1]
-				else :
-					output = torch.cat((output,GumbelSoftmax(temperature=1.0, hard=True, epsilon=epsilon, noise_factor = noise_factor).sample(out[:,2*digit:2*digit+2])[:,0:1]), dim=1)
-			
-			out = output		
+		out = GumbelSoftmax(temperature=1.0, hard=hard, epsilon=epsilon).sample(out)
 		return out
 
 
@@ -102,15 +86,13 @@ class Critic(nn.Module):
 
 
 class GumbelSoftmax(object):
-	def __init__(self, temperature=1.0, epsilon = 0.05, hard=False, noise_factor = 0.0):
+	def __init__(self, temperature=1.0, epsilon = 0.05, hard=False):
 		self.temperature = temperature
 		self.hard = hard
 		self.epsilon = epsilon
-		self.noise_factor = noise_factor
 
 	def sample(self,logits):
 
-		logits = logits + self.noise_factor * torch.randn(logits.shape)
 		gumbelLogits = logits + self.gumbelDistSample(logits)
 		gumbelSoftmax = F.softmax(gumbelLogits/self.temperature, dim=1)
 
